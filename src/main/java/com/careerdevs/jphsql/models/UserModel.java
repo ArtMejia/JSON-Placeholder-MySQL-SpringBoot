@@ -20,6 +20,10 @@ public class UserModel {
         return id;
     }
 
+    public void removeId () {
+        id = 0;
+    }
+
     public String getName() {
         return name;
     }
@@ -39,6 +43,7 @@ public class UserModel {
     public String getWebsite() {
         return website;
     }
+
 
     //    {
 //        "id": 1,

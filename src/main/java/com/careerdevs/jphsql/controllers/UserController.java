@@ -79,7 +79,9 @@ public class UserController {
 
         try {
 
-//            TODO: DAta validation on the new user data (make sure fields are valid values)
+            newUserData.removeId();
+
+//            TODO: Data validation on the new user data (make sure fields are valid values)
 
             UserModel savedUser = userRepository.save(newUserData);
 
@@ -102,4 +104,53 @@ public class UserController {
 //    BONUS: Add address and company to UserModel
 
 
+    @GetMapping("/id/{id}")
+    public ResponseEntity<?> getOneUserById (@PathVariable Integer id) {
+        try {
+
+            UserModel oneUser = userRepository.getReferenceById(id);
+
+            return ResponseEntity.ok(oneUser);
+
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+
+    }
+
+    @DeleteMapping("/sql/all")
+    public ResponseEntity<?> deleteAllUsersSQL () {
+
+        try {
+
+            ArrayList<UserModel> allUsers = (ArrayList<UserModel>) userRepository.findAll();
+
+            return ResponseEntity.ok(allUsers);
+
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @PutMapping
+    public ResponseEntity<?> updateOneUser (@RequestBody UserModel updatedUserData) {
+
+        try {
+
+//            TODO: Data validation on the new user data (make sure fields are valid values)
+
+            UserModel savedUser = userRepository.save(updatedUserData);
+
+            return ResponseEntity.ok(savedUser);
+
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 }
