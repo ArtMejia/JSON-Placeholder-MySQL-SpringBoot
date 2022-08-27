@@ -34,8 +34,4 @@ public class TodoModel {
         return completed;
     }
 
-    //    "userId": 1,
-//            "id": 2,
-//            "title": "quis ut nam facilis et officia qui",
-//            "completed": false
 }

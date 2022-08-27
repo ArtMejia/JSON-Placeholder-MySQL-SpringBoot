@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/posts")
@@ -19,7 +20,7 @@ public class PostController {
     @Autowired
     private PostRepository postRepository;
 
-    //    Getting all user directly from JPH API
+    //    Getting all post directly from JPH API
     @GetMapping("/jph/all")
     public ResponseEntity<?> getAllPostsAPI (RestTemplate restTemplate) {
 
@@ -60,7 +61,7 @@ public class PostController {
 
             PostModel[] allPost = restTemplate.getForObject(JPH_API_URL, PostModel[].class);
 
-//            TODO: remove id from each user
+//            TODO: remove id from each post
 
             assert allPost != null;
             List<PostModel> savedPosts = postRepository.saveAll(Arrays.asList(allPost));
@@ -81,11 +82,96 @@ public class PostController {
 
             newPostData.removeId();
 
-//            TODO: Data validation on the new user data (make sure fields are valid values)
+//            TODO: Data validation on the new post data (make sure fields are valid values)
 
-            PostModel savedUser = postRepository.save(newPostData);
+            postRepository.save(newPostData);
 
-            return ResponseEntity.ok(savedUser);
+            return ResponseEntity.ok(newPostData);
+
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //    GET one post by ID (from SQL DB)
+    @GetMapping("/sql/{id}")
+    public ResponseEntity<?> getOnePostByID (@PathVariable String id) {
+        try {
+
+            //throws NumberFormatException if id is not an int
+            int postId = Integer.parseInt(id);
+
+            System.out.println("Getting Post With ID: " + id);
+
+            //GET DATA FROM SQL (using repo)
+            Optional<PostModel> foundPost = postRepository.findById(postId);
+
+            if (foundPost.isEmpty()) return ResponseEntity.status(404).body("Post Not Found With ID: " + id);
+            //if (foundPost.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+
+            return ResponseEntity.ok(foundPost.get());
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+        }
+        //TODO: reimplement exception throwing to handle 404 errors
+//        catch (HttpClientErrorException e) {
+//
+//            return ResponseEntity.status(404).body("Post Not Found With ID: " + id);
+//
+//        }
+        catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //DELETE one post by ID (from SQL DB) must make sure a post with the given id already exist
+    @DeleteMapping("/sql/{id}")
+    public ResponseEntity<?> deleteOnePostByID (@PathVariable String id) {
+        try {
+
+            //throws NumberFormatException if id is not an int
+            int postId = Integer.parseInt(id);
+
+            System.out.println("Getting Post With ID: " + id);
+
+            //GET DATA FROM SQL (using repo)
+            Optional<PostModel> foundPost = postRepository.findById(postId);
+
+            if (foundPost.isEmpty()) return ResponseEntity.status(404).body("Post Not Found With ID: " + id);
+            //if (foundPost.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+
+            postRepository.deleteById(postId);
+
+            return ResponseEntity.ok(foundPost.get());
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+        }
+        //TODO: reimplement exception throwing to handle 404 errors
+//        catch (HttpClientErrorException e) {
+//            return ResponseEntity.status(404).body("Post Not Found With ID: " + id);
+//        }
+        catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //DELETE All posts (from SQL DB) - returns how many were just deleted
+    @DeleteMapping("/sql/all")
+    public ResponseEntity<?> deleteAllPostsSQL() {
+
+        try {
+
+            long count = postRepository.count();
+            postRepository.deleteAll();
+            return ResponseEntity.ok("Deleted Posts: " + count);
 
         } catch (Exception e) {
             System.out.println(e.getClass());

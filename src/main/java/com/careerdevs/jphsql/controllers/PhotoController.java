@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/photos")
@@ -83,9 +84,94 @@ public class PhotoController {
 
 //            TODO: Data validation on the new photo data (make sure fields are valid values)
 
-            PhotoModel savedPhoto = photoRepository.save(newPhotoData);
+            photoRepository.save(newPhotoData);
 
-            return ResponseEntity.ok(savedPhoto);
+            return ResponseEntity.ok(newPhotoData);
+
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //    GET one photo by ID (from SQL DB)
+    @GetMapping("/sql/{id}")
+    public ResponseEntity<?> getOnePhotoByID (@PathVariable String id) {
+        try {
+
+            //throws NumberFormatException if id is not an int
+            int photoId = Integer.parseInt(id);
+
+            System.out.println("Getting Photo With ID: " + id);
+
+            //GET DATA FROM SQL (using repo)
+            Optional<PhotoModel> foundPhoto = photoRepository.findById(photoId);
+
+            if (foundPhoto.isEmpty()) return ResponseEntity.status(404).body("Photo Not Found With ID: " + id);
+            //if (foundPhoto.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+
+            return ResponseEntity.ok(foundPhoto.get());
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+        }
+        //TODO: reimplement exception throwing to handle 404 errors
+//        catch (HttpClientErrorException e) {
+//
+//            return ResponseEntity.status(404).body("Photo Not Found With ID: " + id);
+//
+//        }
+        catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //DELETE one photo by ID (from SQL DB) must make sure a photo with the given id already exist
+    @DeleteMapping("/sql/{id}")
+    public ResponseEntity<?> deleteOnePhotoByID (@PathVariable String id) {
+        try {
+
+            //throws NumberFormatException if id is not an int
+            int photoId = Integer.parseInt(id);
+
+            System.out.println("Getting Photo With ID: " + id);
+
+            //GET DATA FROM SQL (using repo)
+            Optional<PhotoModel> foundPhoto = photoRepository.findById(photoId);
+
+            if (foundPhoto.isEmpty()) return ResponseEntity.status(404).body("Photo Not Found With ID: " + id);
+            //if (foundPhoto.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+
+            photoRepository.deleteById(photoId);
+
+            return ResponseEntity.ok(foundPhoto.get());
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+        }
+        //TODO: reimplement exception throwing to handle 404 errors
+//        catch (HttpClientErrorException e) {
+//            return ResponseEntity.status(404).body("Photo Not Found With ID: " + id);
+//        }
+        catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //DELETE All photos (from SQL DB) - returns how many were just deleted
+    @DeleteMapping("/sql/all")
+    public ResponseEntity<?> deleteAllPhotosSQL() {
+
+        try {
+
+            long count = photoRepository.count();
+            photoRepository.deleteAll();
+            return ResponseEntity.ok("Deleted Photos: " + count);
 
         } catch (Exception e) {
             System.out.println(e.getClass());

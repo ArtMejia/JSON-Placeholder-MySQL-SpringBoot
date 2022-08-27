@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -88,9 +89,9 @@ public class CommentController {
 
 //            TODO: Data validation on the new comment data (make sure fields are valid values)
 
-            CommentModel savedComment = commentRepository.save(newCommentData);
+            commentRepository.save(newCommentData);
 
-            return ResponseEntity.ok(savedComment);
+            return ResponseEntity.ok(newCommentData);
 
         } catch (Exception e) {
             System.out.println(e.getClass());
@@ -99,24 +100,83 @@ public class CommentController {
         }
     }
 
-    @GetMapping("/findBodyMax")
-    public ResponseEntity<?> findBodyMax (RestTemplate restTemplate) {
+    //    GET one comment by ID (from SQL DB)
+    @GetMapping("/sql/{id}")
+    public ResponseEntity<?> getOneCommentByID (@PathVariable String id) {
+        try {
+
+            //throws NumberFormatException if id is not an int
+            int commentId = Integer.parseInt(id);
+
+            System.out.println("Getting Comment With ID: " + id);
+
+            //GET DATA FROM SQL (using repo)
+            Optional<CommentModel> foundComment = commentRepository.findById(commentId);
+
+            if (foundComment.isEmpty()) return ResponseEntity.status(404).body("Comment Not Found With ID: " + id);
+            //if (foundComment.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+
+            return ResponseEntity.ok(foundComment.get());
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+        }
+        //TODO: reimplement exception throwing to handle 404 errors
+//        catch (HttpClientErrorException e) {
+//
+//            return ResponseEntity.status(404).body("Comment Not Found With ID: " + id);
+//
+//        }
+        catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //DELETE one comment by ID (from SQL DB) must make sure a comment with the given id already exist
+    @DeleteMapping("/sql/{id}")
+    public ResponseEntity<?> deleteOneCommentByID (@PathVariable String id) {
+        try {
+
+            //throws NumberFormatException if id is not an int
+            int commentId = Integer.parseInt(id);
+
+            System.out.println("Getting Comment With ID: " + id);
+
+            //GET DATA FROM SQL (using repo)
+            Optional<CommentModel> foundComment = commentRepository.findById(commentId);
+
+            if (foundComment.isEmpty()) return ResponseEntity.status(404).body("Comment Not Found With ID: " + id);
+            //if (foundComment.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+
+            commentRepository.deleteById(commentId);
+
+            return ResponseEntity.ok(foundComment.get());
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+        }
+        //TODO: reimplement exception throwing to handle 404 errors
+//        catch (HttpClientErrorException e) {
+//            return ResponseEntity.status(404).body("Comment Not Found With ID: " + id);
+//        }
+        catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    //DELETE All comments (from SQL DB) - returns how many were just deleted
+    @DeleteMapping("/sql/all")
+    public ResponseEntity<?> deleteAllCommentsSQL() {
 
         try {
-            //retrieve data from JPH API and save to array of comments
-            CommentModel[] allComments = restTemplate.getForObject(JPH_API_URL, CommentModel[].class);
 
-            //check that allComments is present, otherwise an exception will be thrown
-            assert allComments != null;
-
-            int maxLen = 0;
-            for (CommentModel comment: allComments) {
-                if (comment.getBody().length() > maxLen) maxLen = comment.getBody().length();
-            }
-
-            //remove id from each comment
-
-            return ResponseEntity.ok("Max Length Body: " + maxLen);
+            long count = commentRepository.count();
+            commentRepository.deleteAll();
+            return ResponseEntity.ok("Deleted Comments: " + count);
 
         } catch (Exception e) {
             System.out.println(e.getClass());
@@ -124,4 +184,31 @@ public class CommentController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
+
+
+//    @GetMapping("/findBodyMax")
+//    public ResponseEntity<?> findBodyMax (RestTemplate restTemplate) {
+//
+//        try {
+//            //retrieve data from JPH API and save to array of comments
+//            CommentModel[] allComments = restTemplate.getForObject(JPH_API_URL, CommentModel[].class);
+//
+//            //check that allComments is present, otherwise an exception will be thrown
+//            assert allComments != null;
+//
+//            int maxLen = 0;
+//            for (CommentModel comment: allComments) {
+//                if (comment.getBody().length() > maxLen) maxLen = comment.getBody().length();
+//            }
+//
+//            //remove id from each comment
+//
+//            return ResponseEntity.ok("Max Length Body: " + maxLen);
+//
+//        } catch (Exception e) {
+//            System.out.println(e.getClass());
+//            System.out.println(e.getMessage());
+//            return ResponseEntity.internalServerError().body(e.getMessage());
+//        }
+//    }
 }
