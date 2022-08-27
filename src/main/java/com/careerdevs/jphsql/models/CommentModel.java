@@ -11,8 +11,11 @@ public class CommentModel {
     private int id;
 
     private int postId;
+
     private String name;
     private String email;
+
+    @Column(length = 512)
     private String body;
 
     public int getId() {
@@ -39,11 +42,4 @@ public class CommentModel {
         return body;
     }
 
-    //    {
-//        "postId": 1,
-//            "id": 2,
-//            "name": "quo vero reiciendis velit similique earum",
-//            "email": "Jayne_Kuhic@sydney.com",
-//            "body": "est natus enim nihil est dolore omnis voluptatem numquam\net omnis occaecati quod ullam at\nvoluptatem error expedita pariatur\nnihil sint nostrum voluptatem reiciendis et"
-//    },
 }

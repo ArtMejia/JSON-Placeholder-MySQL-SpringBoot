@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -57,15 +56,21 @@ public class CommentController {
     public ResponseEntity<?> uploadAllCommentsToSQL (RestTemplate restTemplate) {
 
         try {
-
+            //retrieve data from JPH API and save to array of comments
             CommentModel[] allComments = restTemplate.getForObject(JPH_API_URL, CommentModel[].class);
 
-//            TODO: remove id from each comment
-
+            //check that allComments is present, otherwise an exception will be thrown
             assert allComments != null;
-            List<CommentModel> savedComments = commentRepository.saveAll(Arrays.asList(allComments));
 
-            return ResponseEntity.ok(savedComments);
+            //remove id from each comment
+            for (int i = 0; i < allComments.length; i++) {
+                allComments[i].removeId();
+            }
+            //saves comment to database and updates each comment's id field to the saved database ID
+            commentRepository.saveAll(Arrays.asList(allComments));
+
+            //respond with the data that was just saved to the database
+            return ResponseEntity.ok(allComments);
 
         } catch (Exception e) {
             System.out.println(e.getClass());
@@ -86,6 +91,32 @@ public class CommentController {
             CommentModel savedComment = commentRepository.save(newCommentData);
 
             return ResponseEntity.ok(savedComment);
+
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/findBodyMax")
+    public ResponseEntity<?> findBodyMax (RestTemplate restTemplate) {
+
+        try {
+            //retrieve data from JPH API and save to array of comments
+            CommentModel[] allComments = restTemplate.getForObject(JPH_API_URL, CommentModel[].class);
+
+            //check that allComments is present, otherwise an exception will be thrown
+            assert allComments != null;
+
+            int maxLen = 0;
+            for (CommentModel comment: allComments) {
+                if (comment.getBody().length() > maxLen) maxLen = comment.getBody().length();
+            }
+
+            //remove id from each comment
+
+            return ResponseEntity.ok("Max Length Body: " + maxLen);
 
         } catch (Exception e) {
             System.out.println(e.getClass());
