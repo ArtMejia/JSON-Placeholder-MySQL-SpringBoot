@@ -8,28 +8,21 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("api/posts")
 public class PostController {
-
     private final String JPH_API_URL = "https://jsonplaceholder.typicode.com/posts";
-
     @Autowired
     private PostRepository postRepository;
 
-    //    Getting all post directly from JPH API
+    //      Getting all post directly from JPH API
     @GetMapping("/jph/all")
     public ResponseEntity<?> getAllPostsAPI (RestTemplate restTemplate) {
-
         try {
-
             PostModel[] allPosts = restTemplate.getForObject(JPH_API_URL, PostModel[].class);
-
             return ResponseEntity.ok(allPosts);
-
         } catch (Exception e) {
             System.out.println(e.getClass());
             System.out.println(e.getMessage());
@@ -37,16 +30,12 @@ public class PostController {
         }
     }
 
-    //    Get all post stored in out local MySQL DB
+    //      Get all post stored in out local MySQL DB
     @GetMapping("/sql/all")
     public ResponseEntity<?> getAllPostsSQL () {
-
         try {
-
             ArrayList<PostModel> allPosts = (ArrayList<PostModel>) postRepository.findAll();
-
             return ResponseEntity.ok(allPosts);
-
         } catch (Exception e) {
             System.out.println(e.getClass());
             System.out.println(e.getMessage());
@@ -54,20 +43,26 @@ public class PostController {
         }
     }
 
-    @PostMapping("/all")
-    public ResponseEntity<?> uploadAllPostsToSQL (RestTemplate restTemplate) {
-
+    //      Copy JPH SQL data in to jphsql database
+    @PostMapping("/sql/all")
+    public ResponseEntity<?> uploadAllPostToSQL(RestTemplate restTemplate) {
         try {
-
+            //retrieve data from JPH API and save to array of AlbumModels
             PostModel[] allPost = restTemplate.getForObject(JPH_API_URL, PostModel[].class);
 
-//            TODO: remove id from each post
-
+            //check that allPost is present, otherwise an exception will be thrown
             assert allPost != null;
-            List<PostModel> savedPosts = postRepository.saveAll(Arrays.asList(allPost));
 
-            return ResponseEntity.ok(savedPosts);
+            //remove id from each album
+            for (int i = 0; i < allPost.length; i++) {
+                allPost[i].removeId();
+            }
 
+            //saves albums to database and updates each Post's id field to the saved database ID
+            postRepository.saveAll(Arrays.asList(allPost));
+
+            //respond with the data that was just saved to the database
+            return ResponseEntity.ok(allPost);
         } catch (Exception e) {
             System.out.println(e.getClass());
             System.out.println(e.getMessage());
@@ -75,19 +70,14 @@ public class PostController {
         }
     }
 
+    //      POST one post into database as a PostMode
     @PostMapping
     public ResponseEntity<?> uploadOnePost (@RequestBody PostModel newPostData) {
-
         try {
-
             newPostData.removeId();
-
 //            TODO: Data validation on the new post data (make sure fields are valid values)
-
             postRepository.save(newPostData);
-
             return ResponseEntity.ok(newPostData);
-
         } catch (Exception e) {
             System.out.println(e.getClass());
             System.out.println(e.getMessage());
@@ -95,14 +85,12 @@ public class PostController {
         }
     }
 
-    //    GET one post by ID (from SQL DB)
+    //      GET one post by ID (from SQL DB)
     @GetMapping("/sql/{id}")
     public ResponseEntity<?> getOnePostByID (@PathVariable String id) {
         try {
-
             //throws NumberFormatException if id is not an int
             int postId = Integer.parseInt(id);
-
             System.out.println("Getting Post With ID: " + id);
 
             //GET DATA FROM SQL (using repo)
@@ -112,15 +100,12 @@ public class PostController {
             //if (foundPost.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
 
             return ResponseEntity.ok(foundPost.get());
-
         } catch (NumberFormatException e) {
             return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
         }
         //TODO: reimplement exception throwing to handle 404 errors
 //        catch (HttpClientErrorException e) {
-//
 //            return ResponseEntity.status(404).body("Post Not Found With ID: " + id);
-//
 //        }
         catch (Exception e) {
             System.out.println(e.getClass());
@@ -129,26 +114,21 @@ public class PostController {
         }
     }
 
-    //DELETE one post by ID (from SQL DB) must make sure a post with the given id already exist
+    //      DELETE one post by ID (from SQL DB) must make sure a post with the given id already exist
     @DeleteMapping("/sql/{id}")
     public ResponseEntity<?> deleteOnePostByID (@PathVariable String id) {
         try {
-
             //throws NumberFormatException if id is not an int
             int postId = Integer.parseInt(id);
-
             System.out.println("Getting Post With ID: " + id);
 
             //GET DATA FROM SQL (using repo)
             Optional<PostModel> foundPost = postRepository.findById(postId);
-
             if (foundPost.isEmpty()) return ResponseEntity.status(404).body("Post Not Found With ID: " + id);
             //if (foundPost.isEmpty()) throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
 
             postRepository.deleteById(postId);
-
             return ResponseEntity.ok(foundPost.get());
-
         } catch (NumberFormatException e) {
             return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
         }
@@ -163,16 +143,13 @@ public class PostController {
         }
     }
 
-    //DELETE All posts (from SQL DB) - returns how many were just deleted
+    //      DELETE All posts (from SQL DB) - returns how many were just deleted
     @DeleteMapping("/sql/all")
     public ResponseEntity<?> deleteAllPostsSQL() {
-
         try {
-
             long count = postRepository.count();
             postRepository.deleteAll();
             return ResponseEntity.ok("Deleted Posts: " + count);
-
         } catch (Exception e) {
             System.out.println(e.getClass());
             System.out.println(e.getMessage());
@@ -180,4 +157,17 @@ public class PostController {
         }
     }
 
+    //      PUT one post by ID (from SQL DB) - must make sure an post with the given id already exist
+    @PutMapping
+    public ResponseEntity<?> updateOnePost(@RequestBody PostModel newPostData) {
+        try {
+            //TODO: Data validation on the new post (make sure fields are valid values)
+            postRepository.save(newPostData);
+            return ResponseEntity.ok(newPostData);
+        } catch (Exception e) {
+            System.out.println(e.getClass());
+            System.out.println(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 }

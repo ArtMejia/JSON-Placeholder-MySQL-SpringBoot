@@ -14,6 +14,7 @@ public class UserModel {
     private String username;
     private String email;
     private String phone;
+    @Column(length = 50)
     private String website;
 
     public int getId() {
