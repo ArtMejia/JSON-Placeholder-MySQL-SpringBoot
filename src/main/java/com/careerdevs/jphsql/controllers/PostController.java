@@ -1,6 +1,7 @@
 package com.careerdevs.jphsql.controllers;
 
 import com.careerdevs.jphsql.models.PostModel;
+import com.careerdevs.jphsql.models.UserModel;
 import com.careerdevs.jphsql.repositories.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("api/posts")
+@RequestMapping("/api/posts")
+@CrossOrigin(origins = "http://localhost:3500")
 public class PostController {
     private final String JPH_API_URL = "https://jsonplaceholder.typicode.com/posts";
     @Autowired
@@ -157,17 +159,43 @@ public class PostController {
         }
     }
 
-    //      PUT one post by ID (from SQL DB) - must make sure an post with the given id already exist
-    @PutMapping
-    public ResponseEntity<?> updateOnePost(@RequestBody PostModel newPostData) {
+    //      PUT one post by ID (from SQL DB) - must make sure a post with the given id already exist
+    @PutMapping("/sql/{id}")
+    public ResponseEntity<?> updateOnePost(@PathVariable String id, @RequestBody PostModel updatePostData) {
         try {
-            //TODO: Data validation on the new post (make sure fields are valid values)
-            postRepository.save(newPostData);
-            return ResponseEntity.ok(newPostData);
+
+            Optional<PostModel> foundPost = findPost(id);
+            if (foundPost.isEmpty()) return ResponseEntity.status(404).body("Post not found - id:" + id);
+
+            if (foundPost.get().getId() != updatePostData.getId()) return ResponseEntity.status(400).body("Post IDs did not match");
+
+            postRepository.save(updatePostData);
+            return ResponseEntity.ok(updatePostData);
+
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(400).body("ID: " + id + ", is not a valid id. Must be a whole number");
+
         } catch (Exception e) {
             System.out.println(e.getClass());
             System.out.println(e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
+
+    public Optional<PostModel> findPost (String id) throws NumberFormatException {
+        int postId = Integer.parseInt(id);
+        return postRepository.findById(postId);
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
